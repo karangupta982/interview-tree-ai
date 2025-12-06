@@ -142,14 +142,15 @@ async def my_history(request: Request, db: Session = Depends(get_db)):
 async def get_quota(request: Request, db: Session = Depends(get_db)):
     # 1. Authenticate user
     user_details = authenticate_and_get_user_details(request)
+    print("###########Quota endpoint hit user authenticated############")
     if not user_details:
         raise HTTPException(status_code=401, detail="Invalid or missing auth token")
     
     user_id = str(user_details.get("user_id"))
-
+    print("###########Quota endpoint hit user ID############", user_id)
     # 2. Fetch quota
     quota = get_challenge_quota(db, user_id)
-
+    print("###########Quota endpoint hit quota fetched############", quota)
     # 3. If quota doesn't exist yet
     if not quota:
         return {
@@ -160,7 +161,7 @@ async def get_quota(request: Request, db: Session = Depends(get_db)):
 
     # 4. Reset quota if needed
     quota = reset_quota_if_needed(db, quota)
-
+    print("###########Quota endpoint hit quota after reset check############", quota)
     # 5. Return dictionary instead of SQLAlchemy model
     return {
         "id": quota.id,
