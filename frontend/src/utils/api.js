@@ -4,7 +4,7 @@ export const useApi = () => {
     const {getToken} = useAuth()
 
     const makeRequest = async (endpoint, options = {}) => {
-        const token = await getToken()
+        const token = await getToken({ template: "default" })
         const defaultOptions = {
             headers: {
                 "Content-Type": "application/json",
@@ -23,7 +23,8 @@ export const useApi = () => {
             if (response.status === 429) {
                 throw new Error("Daily quota exceeded")
             }
-            throw new Error(errorData?.detail || "An error occurred")
+            // throw new Error(errorData?.detail || "An error occurred")
+            throw new Error(errorData?.detail || response.statusText)
         }
 
         return response.json()
