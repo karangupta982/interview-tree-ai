@@ -18,7 +18,7 @@ export function ChallengeGenerator() {
     const fetchQuota = async () => {
         try {
             const data = await makeRequest("quota")
-            console.log("Quota data:", data);
+            console.log("#############Quota data###################:", data);
             setQuota(data)
         } catch (err) {
             console.log(err)
