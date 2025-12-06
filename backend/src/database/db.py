@@ -9,18 +9,22 @@ def get_challenge_quota(db: Session, user_id: str) -> Optional[ChallengeQuota]:
     """
     Returns the user's quota row if found, otherwise None.
     """
-    return (
-        db.query(ChallengeQuota)
-        .filter(ChallengeQuota.user_id == user_id)
-        .first()
-    )
+    # return (
+    #     db.query(ChallengeQuota)
+    #     .filter(ChallengeQuota.user_id == user_id)
+    #     .first()
+    # )
+    res = db.query(ChallengeQuota).filter(ChallengeQuota.user_id == user_id).first()
+    print("###########Fetched quota#############:", res)
+    return res
+
 
 
 def create_challenge_quota(db: Session, user_id: str) -> ChallengeQuota:
     """
     Creates a new quota entry for a user who does not have one.
     """
-    quota = ChallengeQuota(user_id=user_id)
+    quota = ChallengeQuota(user_id=user_id, quota_remaining=20)
     db.add(quota)
     db.commit()
     db.refresh(quota)
