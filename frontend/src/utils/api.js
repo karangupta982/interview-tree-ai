@@ -4,7 +4,7 @@ export const useApi = () => {
     const {getToken} = useAuth()
 
     const makeRequest = async (endpoint, options = {}) => {
-        const token = await getToken({ template: "default" })
+        const token = await getToken({ template: "backend" })
         const defaultOptions = {
             headers: {
                 "Content-Type": "application/json",
