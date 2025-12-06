@@ -25,6 +25,7 @@ def create_challenge_quota(db: Session, user_id: str) -> ChallengeQuota:
     Creates a new quota entry for a user who does not have one.
     """
     quota = ChallengeQuota(user_id=user_id, quota_remaining=20)
+    print("########### Created new quota #############:", quota)
     db.add(quota)
     db.commit()
     db.refresh(quota)
