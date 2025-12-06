@@ -167,5 +167,5 @@ async def get_quota(request: Request, db: Session = Depends(get_db)):
         "id": quota.id,
         "user_id": quota.user_id,
         "quota_remaining": quota.quota_remaining,
-        "last_reset_date": quota.last_reset_date
+        "last_reset_date": quota.last_reset_date.isoformat()
     }
