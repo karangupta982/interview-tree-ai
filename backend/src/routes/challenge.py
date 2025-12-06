@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from datetime import datetime
 
 from ..ai_generator import generate_challenge_with_ai
 from ..database.db import (
@@ -13,7 +14,7 @@ from ..database.db import (
 from ..utils import authenticate_and_get_user_details
 from ..database.models import get_db
 import json
-from datetime import datetime
+
 
 router = APIRouter()
 
@@ -105,22 +106,51 @@ async def my_history(request: Request, db: Session = Depends(get_db)):
     return {"challenges": challenges}
 
 
+# @router.get("/quota")
+# async def get_quota(request: Request, db: Session = Depends(get_db)):
+#     """
+#     Get the challenge quota for the authenticated user.
+
+#     Args:
+#         request: The FastAPI request object, used for authentication.
+#         db: The database session.
+
+#     Returns:
+#         The user's challenge quota object.
+#     """
+#     user_details = authenticate_and_get_user_details(request)
+#     user_id = str(user_details.get("user_id"))
+
+#     quota = get_challenge_quota(db, user_id)
+#     if not quota:
+#         return {
+#             "user_id": user_id,
+#             "quota_remaining": 0,
+#             "last_reset_date": datetime.now()
+#         }
+
+#     quota = reset_quota_if_needed(db, quota)
+#     return quota
+
+
+
+
+
+
+
 @router.get("/quota")
 async def get_quota(request: Request, db: Session = Depends(get_db)):
-    """
-    Get the challenge quota for the authenticated user.
-
-    Args:
-        request: The FastAPI request object, used for authentication.
-        db: The database session.
-
-    Returns:
-        The user's challenge quota object.
-    """
+    # 1. Authenticate user
     user_details = authenticate_and_get_user_details(request)
+    if not user_details:
+        raise HTTPException(status_code=401, detail="Invalid or missing auth token")
+    
     user_id = str(user_details.get("user_id"))
 
+    # 2. Fetch quota
     quota = get_challenge_quota(db, user_id)
+
+    # 3. If quota doesn't exist yet
     if not quota:
         return {
             "user_id": user_id,
@@ -128,5 +158,13 @@ async def get_quota(request: Request, db: Session = Depends(get_db)):
             "last_reset_date": datetime.now()
         }
 
+    # 4. Reset quota if needed
     quota = reset_quota_if_needed(db, quota)
-    return quota
+
+    # 5. Return dictionary instead of SQLAlchemy model
+    return {
+        "id": quota.id,
+        "user_id": quota.user_id,
+        "quota_remaining": quota.quota_remaining,
+        "last_reset_date": quota.last_reset_date
+    }
