@@ -9,6 +9,7 @@ router = APIRouter()
 
 @router.post("/clerk")
 async def handle_user_created(request: Request, db = Depends(get_db)):
+    print("###########Webhook hit the endpoint############")
     webhook_secret = os.getenv("CLERK_WEBHOOK_SECRET")
 
     if not webhook_secret:
@@ -23,13 +24,13 @@ async def handle_user_created(request: Request, db = Depends(get_db)):
         wh.verify(payload, headers)
 
         data = json.loads(payload)
-
+        print("###########Webhook received#############:", data)
         if data.get("type") != "user.created":
             return {"status": "ignored"}
-
+        print("###########Processing new user#############:")
         user_data = data.get("data", {})
         user_id = user_data.get("id")
-
+        print("###########New user created#############:", type(user_id), user_id)
         create_challenge_quota(db, user_id)
 
         return {"status": "success"}
