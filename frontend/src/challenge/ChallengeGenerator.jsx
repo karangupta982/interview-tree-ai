@@ -44,9 +44,15 @@ export function ChallengeGenerator() {
         }
     }
 
+    // const getNextResetTime = () => {
+    //     if (!quota?.last_reset_date) return null
+    //     const resetDate = new Date(quota.last_reset_data)
+    //     resetDate.setHours(resetDate.getHours() + 24)
+    //     return resetDate
+    // }
     const getNextResetTime = () => {
-        if (!quota?.last_reset_data) return null
-        const resetDate = new Date(quota.last_reset_data)
+        if (!quota?.last_reset_date) return null
+        const resetDate = new Date(quota.last_reset_date)
         resetDate.setHours(resetDate.getHours() + 24)
         return resetDate
     }
@@ -55,7 +61,8 @@ export function ChallengeGenerator() {
         <h2>Coding Challenge Generator</h2>
 
         <div className="quota-display">
-            <p>Challenges remaining today: {quota?.quota_remaining || 0}</p>
+            {/* <p>Challenges remaining today: {quota?.quota_remaining || 0}</p> */}
+            <p>Challenges remaining today: {quota?.quota_remaining ?? 0}</p>
             {quota?.quota_remaining === 0 && (
                 <p>Next reset: {getNextResetTime()?.toLocaleString()}</p>
             )}
