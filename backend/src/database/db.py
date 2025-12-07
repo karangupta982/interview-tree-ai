@@ -20,16 +20,34 @@ def get_challenge_quota(db: Session, user_id: str) -> Optional[ChallengeQuota]:
 
 
 
+# def create_challenge_quota(db: Session, user_id: str) -> ChallengeQuota:
+#     """
+#     Creates a new quota entry for a user who does not have one.
+#     """
+#     quota = ChallengeQuota(user_id=user_id, quota_remaining=20)
+#     print("########### Created new quota #############:", quota)
+#     db.add(quota)
+#     db.commit()
+#     db.refresh(quota)
+#     return quota
+
 def create_challenge_quota(db: Session, user_id: str) -> ChallengeQuota:
-    """
-    Creates a new quota entry for a user who does not have one.
-    """
-    quota = ChallengeQuota(user_id=user_id, quota_remaining=20)
-    print("########### Created new quota #############:", quota)
-    db.add(quota)
-    db.commit()
-    db.refresh(quota)
-    return quota
+    try:
+        quota = ChallengeQuota(
+            user_id=user_id,
+            quota_remaining=20
+        )
+        print("########### Created new quota #############:", quota)
+        db.add(quota)
+        db.commit()
+        db.refresh(quota)
+        print("Saved to DB:", quota)
+        return quota
+    except Exception as e:
+        db.rollback()
+        print("DB ERROR:", e)
+        raise
+
 
 
 def reset_quota_if_needed(db: Session, quota: ChallengeQuota) -> ChallengeQuota:
