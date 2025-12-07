@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime
 
-from ..ai_generator import generate_challenge_with_ai
+from ..ai_generator import generate_topic_nodes, generate_node_detail
 from ..database.db import (
     get_challenge_quota,
     create_challenge,
@@ -20,26 +20,17 @@ router = APIRouter()
 
 
 class ChallengeRequest(BaseModel):
-    difficulty: str
+    # Updated: accept a topic instead of difficulty for topic-node generation
+    topic: str
+    max_subtopics: int = 8
 
     class Config:
-        json_schema_extra = {"example": {"difficulty": "easy"}}
+        json_schema_extra = {"example": {"topic": "ReactJS", "max_subtopics": 6}}
 
 
 @router.post("/generate-challenge")
 async def generate_challenge(request: ChallengeRequest, request_obj: Request, db: Session = Depends(get_db)):
-    """
-    Generate a new challenge using AI, based on the requested difficulty.
-    This endpoint requires authentication and respects the user's challenge quota.
-
-    Args:
-        request: The request body containing the difficulty level.
-        request_obj: The FastAPI request object, used for authentication.
-        db: The database session.
-
-    Returns:
-        A dictionary containing the details of the newly created challenge.
-    """
+    
     try:
         user_details = authenticate_and_get_user_details(request_obj)
         user_id = str(user_details.get("user_id"))
@@ -53,32 +44,19 @@ async def generate_challenge(request: ChallengeRequest, request_obj: Request, db
         if quota.quota_remaining <= 0:
             raise HTTPException(status_code=429, detail="Quota exhausted")
 
+        # Generate topic nodes using AI generator
         try:
-            challenge_data = generate_challenge_with_ai(request.difficulty)
+            topic_data = generate_topic_nodes(request.topic, request.max_subtopics)
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=f"Failed to generate challenge: {e}")
+            raise HTTPException(status_code=400, detail=f"Failed to generate topic nodes: {e}")
 
-        new_challenge = create_challenge(
-            db=db,
-            difficulty=request.difficulty,
-            created_by=user_id,
-            title=challenge_data["title"],
-            options=json.dumps(challenge_data["options"]),
-            correct_answer_id=challenge_data["correct_answer_id"],
-            explanation=challenge_data["explanation"]
-        )
-
+        # Deduct quota and commit
         quota.quota_remaining -= 1
         db.commit()
 
         return {
-            "id": new_challenge.id,
-            "difficulty": request.difficulty,
-            "title": new_challenge.title,
-            "options": json.loads(new_challenge.options),
-            "correct_answer_id": new_challenge.correct_answer_id,
-            "explanation": new_challenge.explanation,
-            "timestamp": new_challenge.date_created.isoformat()
+            "topic": topic_data.get("root", request.topic),
+            "nodes": topic_data.get("nodes", []),
         }
 
     except HTTPException as e:
@@ -169,3 +147,25 @@ async def get_quota(request: Request, db: Session = Depends(get_db)):
         "quota_remaining": quota.quota_remaining,
         "last_reset_date": quota.last_reset_date.isoformat()
     }
+
+
+
+class NodeDetailRequest(BaseModel):
+    topic: str
+    node_title: str
+
+
+@router.post("/generate-node-detail")
+async def generate_node_detail_endpoint(request: NodeDetailRequest, request_obj: Request, db: Session = Depends(get_db)):
+    """
+    Generate a detailed explanation for a single node inside a topic tree.
+    """
+    user_details = authenticate_and_get_user_details(request_obj)
+    if not user_details:
+        raise HTTPException(status_code=401, detail="Invalid or missing auth token")
+
+    try:
+        detail = generate_node_detail(request.topic, request.node_title)
+        return detail
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate node detail: {e}")
