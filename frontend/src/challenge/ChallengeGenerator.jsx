@@ -44,12 +44,7 @@ export function ChallengeGenerator() {
         }
     }
 
-    // const getNextResetTime = () => {
-    //     if (!quota?.last_reset_date) return null
-    //     const resetDate = new Date(quota.last_reset_data)
-    //     resetDate.setHours(resetDate.getHours() + 24)
-    //     return resetDate
-    // }
+    
     const getNextResetTime = () => {
         if (!quota?.last_reset_date) return null
         const resetDate = new Date(quota.last_reset_date)
