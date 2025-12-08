@@ -162,13 +162,51 @@ def generate_challenge_with_ai(difficulty: str) -> Dict[str, Any]:
         }
 
 
+def generate_node_followup(topic: str, node_title: str, followup: str) -> str:
+    """
+    Return a natural-language follow-up answer (no JSON). Keep it concise; include code blocks when relevant.
+    """
+    system_prompt = f"""
+    You are an expert teacher. Answer follow-up questions about "{node_title}" within topic "{topic}" in short paragraphs.
+
+    Rules:
+    - Respond as plain text (no JSON, no lists unless needed).
+    - If code is included, wrap it in fenced code blocks with a correct language tag, e.g.:
+      ```javascript
+      // code
+      ```
+      ```python
+      # code
+      ```
+    - Prefer under 200 words.
+    """
+
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": followup},
+            ],
+            temperature=0.6,
+        )
+
+        raw_content = response.choices[0].message.content
+        if raw_content is None:
+            raise ValueError("Groq returned no content for node follow-up.")
+        return raw_content.strip()
+    except Exception as e:
+        print("Groq node follow-up error:", e)
+        return "Sorry, I couldn’t generate that answer. Please try again."
+
 def generate_topic_nodes(topic: str, max_subtopics: int = 8) -> Dict[str, Any]:
     """
     Generate a topic tree (root + subtopics) for the given topic.
 
     Returns a JSON-friendly dict with keys:
     - root: topic string
-    - nodes: list of nodes where each node is {"id": str, "title": str, "children": [ids]}
+    - nodes: list of nodes where each node is {"id": str, "title": str}
+    Note: Only returns immediate subtopics, no nested children.
     """
     system_prompt = f"""
     You are an expert knowledge-graph generator. Given a topic, produce a JSON object describing a root node and up to {max_subtopics} immediate subtopics.
@@ -177,14 +215,19 @@ def generate_topic_nodes(topic: str, max_subtopics: int = 8) -> Dict[str, Any]:
     {{
       "root": "Topic Name",
       "nodes": [
-        {{"id": "1", "title": "Subtopic A", "children": ["3","4"]}},
-        {{"id": "2", "title": "Subtopic B", "children": []}},
+        {{"id": "1", "title": "Subtopic A"}},
+        {{"id": "2", "title": "Subtopic B"}},
         ...
       ]
     }}
 
-    Make ids simple numeric strings starting from "1". The first node in `nodes` should represent the immediate children of the root.
-    Only return the JSON object and no additional explanation.
+    IMPORTANT:
+    - Make ids simple numeric strings starting from "1"
+    - Each node should only have "id" and "title" fields
+    - Do NOT include "children" field in any node
+    - Return only the immediate subtopics of the root topic
+    - Return no more than {max_subtopics} subtopics; prefer exactly {max_subtopics} if relevant subtopics exist
+    - Only return the JSON object and no additional explanation.
     """
 
     try:
@@ -212,19 +255,31 @@ def generate_topic_nodes(topic: str, max_subtopics: int = 8) -> Dict[str, Any]:
         if "root" not in data or "nodes" not in data:
             raise ValueError("Invalid node structure returned from AI.")
 
-        return data
+        # Clean up nodes - remove children field if present, keep only id and title
+        cleaned_nodes = []
+        for node in data.get("nodes", []):
+            cleaned_node = {
+                "id": str(node.get("id", "")),
+                "title": str(node.get("title", ""))
+            }
+            cleaned_nodes.append(cleaned_node)
+
+        return {
+            "root": data.get("root", topic),
+            "nodes": cleaned_nodes
+        }
 
     except Exception as e:
         print("Groq topic nodes error:", e)
         # Fallback simple node list
         nodes = []
         for i, name in enumerate(["Overview", "Fundamentals", "Advanced Topics", "Examples", "Best Practices"][:max_subtopics], start=1):
-            nodes.append({"id": str(i), "title": name, "children": []})
+            nodes.append({"id": str(i), "title": name})
 
         return {"root": topic, "nodes": nodes}
 
 
-def generate_node_detail(topic: str, node_title: str) -> Dict[str, Any]:
+def generate_node_detail(topic: str, node_title: str, followup: str = None) -> Dict[str, Any]:
     """
     Generate a detailed explanation for a specific node within a topic tree.
 
@@ -232,6 +287,15 @@ def generate_node_detail(topic: str, node_title: str) -> Dict[str, Any]:
     """
     system_prompt = f"""
     You are an expert teacher. Given a topic "{topic}" and a node title "{node_title}", return a JSON object with a concise definition, why it's important, a short example, and 2-3 interview-style questions with answers.
+
+    If your answer includes any code, wrap it in fenced code blocks with the correct language label, for example:
+    ```javascript
+    // code here
+    ```
+    ```python
+    # code here
+    ```
+    Keep the JSON valid by escaping newlines as needed.
 
     STRICT JSON FORMAT:
     {{
@@ -248,11 +312,16 @@ def generate_node_detail(topic: str, node_title: str) -> Dict[str, Any]:
     """
 
     try:
+        # If there's a followup question from the user, include it in the user message
+        user_message = f"Provide detailed info for node: {node_title} under topic: {topic}."
+        if followup:
+            user_message += f"\n\nFollow-up question: {followup} \nAnswer and expand the previous information accordingly."
+
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Provide detailed info for node: {node_title} under topic: {topic}."}
+                {"role": "user", "content": user_message}
             ],
             temperature=0.6,
         )
