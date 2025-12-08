@@ -2,7 +2,7 @@ import "react"
 import {SignIn, SignUp, SignedIn, SignedOut} from "@clerk/clerk-react"
 
 export function AuthenticationPage() {
-    return <div className="auth-container">
+    return <div className="auth-container flex justify-center items-center min-h-screen w-full overflow-hidden bg-[#0e1217] text-white">
         <SignedOut>
             <SignIn routing="path" path="/sign-in"/>
             <SignUp routing="path" path="/sign-up"/>
