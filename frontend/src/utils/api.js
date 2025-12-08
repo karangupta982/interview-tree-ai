@@ -4,6 +4,8 @@ import {useCallback} from "react"
 export const useApi = () => {
     const {getToken} = useAuth()
 
+    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
+
     const makeRequest = useCallback(async (endpoint, options = {}) => {
         const token = await getToken({ template: "backend" })
         const defaultOptions = {
@@ -14,7 +16,7 @@ export const useApi = () => {
         }
 
         // const response = await fetch(`http://localhost:8000/api/${endpoint}`, {
-        const response = await fetch(`https://interview-tree-ai.onrender.com/api/${endpoint}`, {
+        const response = await fetch(`${BACKEND_URL}/api/${endpoint}`, {
             ...defaultOptions,
             ...options,
         })
