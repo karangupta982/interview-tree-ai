@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime
 
-from ..ai_generator import generate_topic_nodes, generate_node_detail
+from ..ai_generator import generate_topic_nodes, generate_node_detail, generate_node_followup
 from ..database.db import (
     get_challenge_quota,
     create_challenge,
@@ -153,6 +153,12 @@ async def get_quota(request: Request, db: Session = Depends(get_db)):
 class NodeDetailRequest(BaseModel):
     topic: str
     node_title: str
+    followup: str | None = None
+
+class NodeFollowupRequest(BaseModel):
+    topic: str
+    node_title: str
+    followup: str
 
 
 @router.post("/generate-node-detail")
@@ -165,7 +171,23 @@ async def generate_node_detail_endpoint(request: NodeDetailRequest, request_obj:
         raise HTTPException(status_code=401, detail="Invalid or missing auth token")
 
     try:
-        detail = generate_node_detail(request.topic, request.node_title)
+        detail = generate_node_detail(request.topic, request.node_title, request.followup)
         return detail
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate node detail: {e}")
+
+
+@router.post("/generate-node-followup")
+async def generate_node_followup_endpoint(request: NodeFollowupRequest, request_obj: Request, db: Session = Depends(get_db)):
+    """
+    Generate a natural-language follow-up answer (plain text, may include code blocks).
+    """
+    user_details = authenticate_and_get_user_details(request_obj)
+    if not user_details:
+        raise HTTPException(status_code=401, detail="Invalid or missing auth token")
+
+    try:
+        answer = generate_node_followup(request.topic, request.node_title, request.followup)
+        return {"answer": answer}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate follow-up: {e}")
