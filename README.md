@@ -22,7 +22,7 @@ Below is an embedded demo video showing the UI and a session generating and expa
 [![Img1](./frontend//src/assets/InterviewTreeaiimg1.jpeg)](https://interview-tree-ai.vercel.app/)
 
 
-[![Img2](./frontend//src/assets/InterviewTreeaiimg2.jpeg)](https://interview-tree-ai.vercel.app/)
+[![Img2](./frontend//src/assets/InterviewTreeaiimg2.png)](https://interview-tree-ai.vercel.app/)
 
 
 [![Img3](./frontend//src/assets/InterviewTreeaiimg3.jpeg)](https://interview-tree-ai.vercel.app/)
