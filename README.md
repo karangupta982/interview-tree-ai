@@ -102,12 +102,7 @@ Each endpoint validates the Clerk JWT, checks quota, records usage, makes (async
 
 Below is an embedded demo video showing the UI and a session generating and expanding a topic tree.
 
-<video controls width="720">
-  <source src="frontend/src/assets/InterviewTreeAI.mp4" type="video/mp4">
-  Your browser does not support the video tag. You can also open the video directly: [Demo Video](frontend/src/assets/demo.mp4)
-</video>
-
-If the asset filename differs in your copy, replace `frontend/src/assets/demo.mp4` with the actual video filename in the repository.
+https://github.com/karangupta982/interview-tree-ai/issues/1#issue-3738770345
 
 ---
 
